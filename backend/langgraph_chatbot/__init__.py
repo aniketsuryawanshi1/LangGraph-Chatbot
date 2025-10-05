@@ -1,0 +1,3 @@
+"""
+Main Django project package.
+"""

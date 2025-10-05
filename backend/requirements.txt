@@ -1,0 +1,13 @@
+langchain==0.2.14
+langchain-openai==0.1.22
+langgraph==0.0.69
+openai==1.40.2
+Django==5.1.2
+djangorestframework==3.15.2
+python-dotenv==1.0.1
+numexpr==2.10.1
+psycopg2-binary==2.9.9
+drf-spectacular==0.28.0
+numexpr==2.13.1
+langchain-openai==0.1.22
+
