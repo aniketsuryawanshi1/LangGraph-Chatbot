@@ -1,0 +1,138 @@
+services:
+  # PostgreSQL Database Service
+
+  db:
+    image: postgres:15-alpine
+    container_name: chatbot_db
+    environment:
+      POSTGRES_DB: langgraph_chatbot_db
+      POSTGRES_USER: langgraph_user
+      POSTGRES_PASSWORD: Andi4frc3@1
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U langgraph_user -d langgraph_chatbot_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chatbot_network
+    restart: unless-stopped
+
+  # Django Backend Service
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: chatbot_backend
+    env_file:
+      - ./backend/.env
+    command: sh -c "python manage.py migrate && python scripts/load_model.py && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      # Volume mount for live code changes (hot reload)
+      - ./backend:/app
+      # Cache directory for model persistence
+      - model_cache:/app/cache
+      # Static files
+      - static_volume:/app/staticfiles
+      # Media files
+      - media_volume:/app/media
+      - ./backend/logs:/app/logs
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - chatbot_network
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/chat/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # React Frontend Service (Development)
+
+  # frontend-dev:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile.dev
+  #   container_name: chatbot_frontend_dev
+  #   volumes:
+  #     - ./frontend:/app
+  #     - /app/node_modules
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - VITE_API_URL=/api
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - chatbot_network
+  #   restart: unless-stopped
+  #   stdin_open: true
+  #   tty: true
+  #   profiles:
+  #     - dev
+
+  # Nginx + React Frontend (Production)
+
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   container_name: chatbot_frontend
+  #   ports:
+  #     - "80:80"
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - chatbot_network
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test:
+  #       [
+  #         "CMD",
+  #         "wget",
+  #         "--quiet",
+  #         "--tries=1",
+  #         "--spider",
+  #         "http://localhost:80/",
+  #       ]
+  #     interval: 30s
+  #     timeout: 3s
+  #     retries: 3
+
+# Named Volumes for Data Persistence
+
+volumes:
+  # PostgreSQL data - persists even after container restart
+  postgres_data:
+    driver: local
+
+  # Model cache - for LangChain/OpenAI model caching
+  model_cache:
+    driver: local
+
+  # Static files (CSS, JS, Images)
+  static_volume:
+    driver: local
+
+  # Media files (User uploads)
+  media_volume:
+    driver: local
+
+# Networks
+
+networks:
+  chatbot_network:
+    driver: bridge

@@ -57,13 +57,13 @@ class LangChainFactory:
         if max_tokens is None:
             max_tokens = Config.get_max_tokens()
         
-        # Create LLM instance with configuration
+        # Create LLM instance with configuration (FIXED for newer versions)
         llm = ChatOpenAI(
             model=model_name,
             temperature=temperature,
-            openai_api_key=api_key,
+            api_key=api_key,
             max_tokens=max_tokens,
-            cache=Config.get_cache_enabled()
+            # Removed 'cache' parameter - use default caching behavior
         )
         
         # Cache the instance
@@ -166,7 +166,6 @@ Provide a clear and friendly response explaining the calculation result."""
             'model': llm.model_name,
             'temperature': llm.temperature,
             'max_tokens': llm.max_tokens,
-            'cache_enabled': hasattr(llm, 'cache') and llm.cache
         }
 
 

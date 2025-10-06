@@ -1,4 +1,3 @@
-
 """
 Script to pre-load and cache the OpenAI model on application startup.
 
@@ -19,7 +18,7 @@ import django
 sys.path.insert(0, '/app')
 
 # Setup Django environment
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'chatbot_project.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "langgraph_chatbot.settings")
 django.setup()
 
 from dotenv import load_dotenv
